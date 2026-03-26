@@ -1,0 +1,35 @@
+server:
+  port: 8087
+
+spring:
+  security:
+    enabled: false
+  application:
+    name: analytics-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tryItOutEnabled: true
+    operationsSorter: method
+
+# Настройки для Kafka (если используете)
+#kafka:
+#  bootstrap-servers: localhost:9092
+#  consumer:
+#    group-id: analytics-group
+#    auto-offset-reset: earliest
+#    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#    value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+#    properties:
+#      spring.json.trusted.packages: "*"

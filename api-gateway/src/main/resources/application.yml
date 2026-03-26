@@ -1,0 +1,78 @@
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+  application:
+    name: api-gateway
+  security:
+    enabled: false
+  cloud:
+    gateway:
+      default-filters:
+        - AddResponseHeader=X-Response-Id, gateway-123
+      routes:
+        # API маршруты
+        - id: auth-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/auth/**
+          filters: []
+
+        - id: test-management
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/tests/**
+          filters: []
+
+        - id: test-session
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/sessions/**
+          filters: []
+
+        - id: proctoring
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/proctoring/**
+          filters: []
+
+        - id: proctoring-websocket
+          uri: ws://localhost:8084
+          predicates:
+            - Path=/ws/proctoring/**
+
+        - id: gamification
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/gamification/**
+          filters: []
+
+        - id: notification
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/notifications/**
+          filters: []
+
+        - id: analytics
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/analytics/**
+          filters: []
+
+      httpclient:
+        websocket:
+          max-frame-payload-length: 65536
+
+eureka:
+  client:
+    enabled: false
