@@ -2,6 +2,7 @@ logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.web: DEBUG
+
 server:
   port: 8080
   forward-headers-strategy: framework
@@ -21,48 +22,55 @@ spring:
       default-filters:
         - AddResponseHeader=X-Response-Id, gateway-123
       routes:
-        # API маршруты
+        # Auth Service (все эндпоинты)
         - id: auth-service
-          uri: http://localhost:8081
+          uri: http://localhost:8089
           predicates:
-            - Path=/api/auth/**
+            - Path=/api/auth/**, /api/groups/**, /api/specialties/**, /api/teachers/**, /api/users/**
           filters: []
 
+        # Test Management Service
         - id: test-management
           uri: http://localhost:8082
           predicates:
-            - Path=/api/tests/**
+            - Path=/api/tests/**,/api/assignments/**
           filters: []
 
+        # Test Session Service
         - id: test-session
           uri: http://localhost:8083
           predicates:
             - Path=/api/sessions/**
           filters: []
 
+        # Proctoring Service
         - id: proctoring
           uri: http://localhost:8084
           predicates:
             - Path=/api/proctoring/**
           filters: []
 
+        # Proctoring WebSocket
         - id: proctoring-websocket
           uri: ws://localhost:8084
           predicates:
             - Path=/ws/proctoring/**
 
+        # Gamification Service
         - id: gamification
           uri: http://localhost:8085
           predicates:
             - Path=/api/gamification/**
           filters: []
 
+        # Notification Service
         - id: notification
           uri: http://localhost:8086
           predicates:
             - Path=/api/notifications/**
           filters: []
 
+        # Analytics Service
         - id: analytics
           uri: http://localhost:8087
           predicates:

@@ -28,9 +28,9 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "User registered successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input")
     })
-    public ResponseEntity<User> register(@Valid @RequestBody RegisterRequest request) {
-        User user = authService.register(request);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<JwtResponse> register(@Valid @RequestBody RegisterRequest request) {
+        JwtResponse response = authService.register(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
@@ -40,7 +40,7 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
-        String token = authService.login(request);
-        return ResponseEntity.ok(new JwtResponse(token, "Bearer", null, null, null, null, null));
+        JwtResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 }

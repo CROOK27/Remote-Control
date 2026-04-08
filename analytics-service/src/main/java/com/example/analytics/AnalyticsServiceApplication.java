@@ -10,7 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         DataSourceAutoConfiguration.class,
         HibernateJpaAutoConfiguration.class
 })
-@EnableFeignClients(basePackages = "com.example.analytics.client")
+@EnableFeignClients
 public class AnalyticsServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(AnalyticsServiceApplication.class, args);

@@ -13,6 +13,6 @@ public class SuspiciousActionEvent {
     private Long sessionId;
     private Long userId;
     private String actionType;
-    private String details;
-    private LocalDateTime timestamp;
+    private String description;
+    private LocalDateTime detectedAt;
 }

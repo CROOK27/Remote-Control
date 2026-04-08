@@ -31,5 +31,6 @@ public class Group {
     private String academicYear;
 
     @OneToMany(mappedBy = "group")
+    @Column(nullable = false, columnDefinition = "0")
     private List<User> students = new ArrayList<>();
 }

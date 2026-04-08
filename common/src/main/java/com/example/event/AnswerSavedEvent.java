@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AnswerSavedEvent {
     private Long sessionId;
+    private Long userId;
     private Long questionId;
     private String answer;
     private Boolean isCorrect;

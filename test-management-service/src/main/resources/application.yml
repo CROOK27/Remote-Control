@@ -1,6 +1,9 @@
 server:
   port: 8082
-
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springdoc: DEBUG
 spring:
   security:
     enabled: false
@@ -10,6 +13,12 @@ spring:
     nacos:
       discovery:
         server-addr: localhost:8848
+        enabled: true
+    autoconfigure:
+      exclude:
+        - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+        - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+
   datasource:
     url: jdbc:postgresql://localhost:5433/test_management_db
     username: postgres
@@ -22,12 +31,39 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.type.mapping:
+          session: com.example.common.event.SessionStartedEvent
+          answer: com.example.common.event.AnswerSavedEvent
+          proctoring: com.example.common.event.SuspiciousActionEvent
+          achievement: com.example.common.event.AchievementUnlockedEvent
+          notification: com.example.common.event.NotificationEvent
+          test: com.example.common.event.TestPublishedEvent
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping:
+          session: com.example.common.event.SessionStartedEvent
+          answer: com.example.common.event.AnswerSavedEvent
+          proctoring: com.example.common.event.SuspiciousActionEvent
+          achievement: com.example.common.event.AchievementUnlockedEvent
+          notification: com.example.common.event.NotificationEvent
+          test: com.example.common.event.TestPublishedEvent
 
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 springdoc:
   api-docs:
-    enabled: true
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
     path: /swagger-ui.html
+    tryItOutEnabled: true

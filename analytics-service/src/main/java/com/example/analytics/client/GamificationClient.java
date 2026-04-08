@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "gamification-service")
 public interface GamificationClient {
 
-    @GetMapping("/api/gamification/users/{userId}")
+    @GetMapping("/api/gamification/users/{userId}/points")
     Object getUserGamification(@PathVariable("userId") Long userId);
 }

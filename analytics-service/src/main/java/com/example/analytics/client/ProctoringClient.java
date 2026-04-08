@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "proctoring-service")
 public interface ProctoringClient {
 
-    @GetMapping("/api/proctoring/sessions/{sessionId}")
+    @GetMapping("/api/proctoring/sessions/{sessionId}/events")
     Object getProctoringData(@PathVariable("sessionId") Long sessionId);
 }

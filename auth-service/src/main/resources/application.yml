@@ -1,11 +1,18 @@
 server:
-  port: 8081
-
+  port: 8089
+app:
+  roles:
+    admin: ADMIN
+    teacher: TEACHER
+    student: STUDENT
 spring:
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
   application:
     name: auth-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/auth_db
+    url: jdbc:postgresql://localhost:5439/auth_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver

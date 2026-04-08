@@ -34,7 +34,6 @@
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.6.0</springdoc.version>
         <spring-cloud.version>2025.0.1</spring-cloud.version>
-        <nacos.version>2023.0.1.2</nacos.version>
     </properties>
 
     <dependencyManagement>
@@ -47,11 +46,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Nacos Discovery -->
             <dependency>
                 <groupId>com.alibaba.cloud</groupId>
-                <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-                <version>${nacos.version}</version>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>2023.0.1.2</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
+
             <!-- JWT -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
@@ -71,7 +75,7 @@
                 <scope>runtime</scope>
             </dependency>
 
-            <!-- SpringDoc (WebMVC) – только для сервлетных сервисов -->
+            <!-- SpringDoc -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -81,7 +85,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Общие для всех модулей (без web, без websocket) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
