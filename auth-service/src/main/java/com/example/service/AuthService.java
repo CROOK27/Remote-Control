@@ -20,6 +20,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private InvitationService invitationService;
 
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
@@ -30,19 +31,29 @@ public class AuthService {
             throw new RuntimeException("Email already exists");
         }
 
+        Role role;
+        if ("TEACHER".equalsIgnoreCase(request.getRole())) {
+            role = Role.TEACHER;
+            if (request.getInvitationCode() == null || request.getInvitationCode().isEmpty()) {
+                throw new RuntimeException("Invitation code is required to register as TEACHER");
+            }
+        } else if ("ADMIN".equalsIgnoreCase(request.getRole())) {
+            role = Role.ADMIN;
+        } else {
+            role = Role.STUDENT;
+        }
+
         User user = new User();
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        if ("TEACHER".equalsIgnoreCase(request.getRole())) {
-            user.setRole(Role.TEACHER);
-        } else if ("ADMIN".equalsIgnoreCase(request.getRole())) {
-            user.setRole(Role.ADMIN);
-        } else {
-            user.setRole(Role.STUDENT);
-        }
+        user.setRole(role);
         userRepository.save(user);
+
+        if (request.getInvitationCode() != null && !request.getInvitationCode().isEmpty()) {
+            invitationService.validateAndUseCode(request.getInvitationCode(), user.getId());
+        }
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
@@ -53,14 +64,9 @@ public class AuthService {
         String token = jwtService.generateToken(userDetails);
 
         return new JwtResponse(
-                token,
-                "Bearer",
-                user.getId(),
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getRole().name(),
-                jwtExpiration
+                token, "Bearer", user.getId(), user.getEmail(),
+                user.getFirstName(), user.getLastName(),
+                user.getRole().name(), jwtExpiration
         );
     }
 

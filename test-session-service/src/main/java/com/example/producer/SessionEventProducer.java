@@ -24,22 +24,16 @@ public class SessionEventProducer {
         log.info("Sent SessionStartedEvent for session: {}", sessionId);
     }
 
-    public void sendSessionCompletedEvent(Long sessionId, Long userId, Long testId,
-                                          Integer score, Integer totalQuestions,
-                                          Integer correctAnswers) {
-        SessionCompletedEvent event = new SessionCompletedEvent(
-                sessionId, userId, testId, score, totalQuestions, correctAnswers, LocalDateTime.now()
-        );
+    public void sendSessionCompletedEvent(Long sessionId, Long userId, Long testId, Integer score, Integer totalQuestions, Integer correctAnswers) {
+        SessionCompletedEvent event = new SessionCompletedEvent(sessionId, userId, testId, score, totalQuestions, correctAnswers,LocalDateTime.now());
+        kafkaTemplate.send("session-completed", event);
         kafkaTemplate.send("session-events", event);
         log.info("Sent SessionCompletedEvent for session: {}", sessionId);
     }
 
-    public void sendAnswerSavedEvent(Long sessionId, Long userId, Long questionId,
-                                     String answer, Boolean isCorrect) {
-        AnswerSavedEvent event = new AnswerSavedEvent(
-                sessionId, userId, questionId, answer, isCorrect, LocalDateTime.now()
-        );
-        kafkaTemplate.send("answer-events", event);
+    public void sendAnswerSavedEvent(Long sessionId, Long userId, Long testId, Long questionId, String answer, Boolean isCorrect) {
+        AnswerSavedEvent event = new AnswerSavedEvent(sessionId, userId, testId, questionId, answer, isCorrect, LocalDateTime.now());
+        kafkaTemplate.send("answer-saved", event);
         log.info("Sent AnswerSavedEvent for session: {}, question: {}", sessionId, questionId);
     }
 }

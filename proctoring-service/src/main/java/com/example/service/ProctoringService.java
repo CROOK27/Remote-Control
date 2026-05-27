@@ -12,8 +12,10 @@ import com.example.repository.ProctoringEventRepository;
 import com.example.repository.SuspiciousActionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +29,12 @@ public class ProctoringService {
     private final ProctoringEventRepository proctoringEventRepository;
     private final SuspiciousActionRepository suspiciousActionRepository;
     private final ProctoringEventProducer eventProducer;
+    private final RestTemplate restTemplate;
+
+    @Value("${session.service.url:http://localhost:8081}")
+
+    private String sessionServiceUrl;
+    private static final int DEFAULT_VIOLATION_LIMIT = 3;
 
     @Transactional
     public ProctoringEventDto logEvent(ProctoringRequest request) {
@@ -145,5 +153,42 @@ public class ProctoringService {
                 action.getDetectedAt(),
                 action.getResolved()
         );
+    }
+
+    public boolean handleEvent(Long sessionId, ProctoringEventDto event) {
+        ProctoringEvent proctorEvent = new ProctoringEvent();
+        proctorEvent.setSessionId(sessionId);
+        proctorEvent.setEventType(event.getEventType());
+        proctorEvent.setEventTime(LocalDateTime.now());
+        proctoringEventRepository.save(proctorEvent);
+        int violationCount = proctoringEventRepository.countBySessionIdAndEventType(sessionId, event.getEventType());
+        int limit = getViolationLimit(sessionId);
+        if (violationCount > limit) {
+            String url = sessionServiceUrl + "/api/sessions/" + sessionId + "/terminate";
+            try {
+                restTemplate.postForObject(url, null, Void.class);
+            } catch (Exception e) {
+                System.err.println("Failed to call session service: " + e.getMessage());
+            }
+
+            SuspiciousAction action = new SuspiciousAction();
+            action.setSessionId(sessionId);
+            action.setActionType(event.getEventType());
+            action.setDescription("Exceeded violation limit: " + violationCount + " > " + limit);
+            action.setSeverity("HIGH");
+            action.setDetectedAt(LocalDateTime.now());
+            action.setResolved(false);
+            //action.setUserId(sessionId.); //TODO: Получение айди пользователя из сессий
+            suspiciousActionRepository.save(action);
+
+            return true;
+        }
+        return false;
+    }
+
+    private int getViolationLimit(Long sessionId) {
+        // Можно загружать из БД (настроек теста, связанного с сессией)
+        // Пока вернём константу
+        return DEFAULT_VIOLATION_LIMIT;
     }
 }

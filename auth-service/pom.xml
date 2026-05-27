@@ -9,7 +9,7 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>analytics-service</artifactId>
+    <artifactId>auth-service</artifactId>
 
     <dependencies>
         <dependency>
@@ -26,7 +26,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-
+        <!-- WEBSOCKET -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>

@@ -11,7 +11,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>analytics-service</module>
         <module>api-gateway</module>
         <module>auth-service</module>
         <module>test-management-service</module>
@@ -20,6 +19,7 @@
         <module>gamification-service</module>
         <module>notification-service</module>
         <module>common</module>
+        <module>analytics-service</module>
     </modules>
 
     <parent>
@@ -55,7 +55,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <!-- JWT -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>

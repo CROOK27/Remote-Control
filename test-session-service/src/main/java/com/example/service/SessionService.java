@@ -1,12 +1,13 @@
 package com.example.service;
 
-import com.example.dto.SessionDto;
-import com.example.dto.SessionResultDto;
-import com.example.dto.StartSessionRequest;
+import com.example.dto.*;
+import com.example.entity.Answer;
+import com.example.entity.QuestionSnapshot;
 import com.example.entity.SessionStatus;
 import com.example.entity.TestSession;
 import com.example.producer.SessionEventProducer;
 import com.example.repository.AnswerRepository;
+import com.example.repository.QuestionSnapshotRepository;
 import com.example.repository.TestSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class SessionService {
     private final AnswerRepository answerRepository;
     private final SessionEventProducer eventProducer;
     private final AnswerService answerService;
+    private final QuestionSnapshotRepository questionSnapshotRepository;
 
     @Value("${session.default-time-limit:60}")
     private int defaultTimeLimit;
@@ -136,7 +138,17 @@ public class SessionService {
     public SessionResultDto getSessionResults(Long sessionId) {
         return answerService.calculateResults(sessionId);
     }
-
+    private QuestionDto convertToQuestionDto(QuestionSnapshot q) {
+        QuestionDto dto = new QuestionDto();
+        dto.setId(q.getId());
+        dto.setText(q.getText());
+        dto.setType(q.getQuestionType());
+        // Преобразование JSON options -> List<String>
+        // if (q.getOptionsJson() != null) {
+        //     dto.setOptions(objectMapper.readValue(q.getOptionsJson(), new TypeReference<>() {}));
+        // }
+        return dto;
+    }
     private SessionDto convertToDto(TestSession session) {
         SessionDto dto = new SessionDto();
         dto.setId(session.getId());
@@ -151,5 +163,34 @@ public class SessionService {
         dto.setTotalAnswers((int) totalAnswers);
 
         return dto;
+    }
+
+    private int getTotalQuestionsForTest(Long testId) {
+        return sessionRepository.countQuestionsByTestId(testId);
+    }
+    public QuestionDto getNextQuestion(Long sessionId, String studentEmail) {
+        TestSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+
+        List<Long> answeredIds = answerRepository.findQuestionIdsBySessionId(sessionId);
+        List<QuestionSnapshot> allQuestions = questionSnapshotRepository.findByTestId(session.getTestId());
+        QuestionSnapshot next = allQuestions.stream()
+                .filter(q -> !answeredIds.contains(q.getId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No more questions"));
+
+        return convertToQuestionDto(next);
+    }
+    private int calculateStreak(Long sessionId) {
+        List<Answer> recentAnswers = answerRepository.findBySessionIdOrderByAnsweredAtDesc(sessionId);
+        int streak = 0;
+        for (Answer answer : recentAnswers) {
+            if (Boolean.TRUE.equals(answer.getIsCorrect())) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+        return streak;
     }
 }

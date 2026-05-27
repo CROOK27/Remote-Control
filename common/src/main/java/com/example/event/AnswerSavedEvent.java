@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class AnswerSavedEvent {
     private Long sessionId;
     private Long userId;
+    private Long testId;
     private Long questionId;
     private String answer;
     private Boolean isCorrect;

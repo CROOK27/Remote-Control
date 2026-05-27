@@ -8,6 +8,7 @@ import com.example.entity.SessionStatus;
 import com.example.entity.TestSession;
 import com.example.producer.SessionEventProducer;
 import com.example.repository.AnswerRepository;
+import com.example.repository.QuestionSnapshotRepository;
 import com.example.repository.TestSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class AnswerService {
     private final TestSessionRepository sessionRepository;
     private final SessionEventProducer eventProducer;
 
+
     @Transactional
     public AnswerDto saveAnswer(Long sessionId, AnswerRequest request) {
         TestSession session = sessionRepository.findById(sessionId)
@@ -37,7 +39,6 @@ public class AnswerService {
         }
 
         // TODO: Проверить правильность ответа через test-management-service
-        // Пока используем заглушку
         boolean isCorrect = checkAnswer(request.getQuestionId(), request.getAnswer());
         int pointsEarned = isCorrect ? 10 : 0;
 
@@ -67,7 +68,7 @@ public class AnswerService {
         }
 
         // Отправляем событие в Kafka
-        eventProducer.sendAnswerSavedEvent(sessionId, session.getUserId(),
+        eventProducer.sendAnswerSavedEvent(sessionId, session.getUserId(), session.getTestId(),
                 request.getQuestionId(), request.getAnswer(), isCorrect);
 
         return convertToDto(answer);

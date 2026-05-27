@@ -1,24 +1,271 @@
+version: '2.3'
+
+networks:
+  youtest-net:
+    driver: bridge
+
 services:
+  postgres:
+    image: postgres:14
+    container_name: youtest-postgres
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-youtest}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-youtest} -d ${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    container_name: youtest-nacos
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
-    depends_on:
-      - zookeeper
+    restart: unless-stopped
+    networks:
+      - youtest-net
     ports:
       - "9092:9092"
+    depends_on:
+      - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  auth-service:
+    build: ./auth-service
+    container_name: youtest-auth
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${AUTH_DB:-auth_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+
+  test-management-service:
+    build: ./test-management-service
+    container_name: youtest-test-mgmt
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${TEST_MGMT_DB:-test_mgmt_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+
+  session-service:
+    build: ./test-session-service
+    container_name: youtest-session
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${SESSION_DB:-session_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SESSION_DEFAULT_TIME_LIMIT: ${SESSION_DEFAULT_TIME_LIMIT:-60}
+
+  proctoring-service:
+    build: ./proctoring-service
+    container_name: youtest-proctoring
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8084:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${PROCTORING_DB:-proctoring_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SESSION_SERVICE_URL: http://session-service:8080
+
+  gamification-service:
+    build: ./gamification-service
+    container_name: youtest-gamification
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8085:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${GAMIFICATION_DB:-gamification_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      GAMIFICATION_POINTS_PER_CORRECT_ANSWER: ${GAMIFICATION_POINTS_PER_CORRECT_ANSWER:-10}
+      GAMIFICATION_POINTS_PER_SESSION_COMPLETION: ${GAMIFICATION_POINTS_PER_SESSION_COMPLETION:-50}
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: youtest-analytics
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8086:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${ANALYTICS_DB:-analytics_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
+
+  notification-service:
+    build: ./notification-service
+    container_name: youtest-notification
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8087:8080"
+    depends_on:
+      nacos:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${NOTIFICATION_DB:-notification_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-youtest}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: youtest-gateway
+    restart: unless-stopped
+    networks:
+      - youtest-net
+    ports:
+      - "8080:8080"
+    depends_on:
+      nacos:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      session-service:
+        condition: service_started
+      test-management-service:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      JWT_SECRET: ${JWT_SECRET}
+
+volumes:
+  postgres_data:

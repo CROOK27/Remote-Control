@@ -27,6 +27,9 @@ public class PointsHistory {
     private Long questionId;
 
     @Column(nullable = false)
+    private Long testId;
+
+    @Column(nullable = false)
     private Integer pointsEarned;
 
     @Column(nullable = false)

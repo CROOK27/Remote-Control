@@ -1,5 +1,6 @@
 package com.example.dto;
 
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class JwtResponse {
     private String token;
+    @Column(columnDefinition = "Bearer")
     private String type = "Bearer";
     private Long id;
     private String email;

@@ -31,7 +31,7 @@ public class AnalyticsController {
             @ApiResponse(responseCode = "200", description = "Статистика"),
             @ApiResponse(responseCode = "404", description = "Тест не найден")
     })
-    public ResponseEntity<?> getTestStatistics(@PathVariable Long testId) {
+    public ResponseEntity<?> getTestStatistics( @PathVariable Long testId) {
         Map<String, Object> report = new HashMap<>();
         try {
             report.put("test", testManagementClient.getTest(testId));

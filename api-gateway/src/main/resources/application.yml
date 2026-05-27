@@ -1,81 +1,153 @@
 logging:
   level:
+    org.springframework.cloud.loadbalancer: TRACE
+    com.alibaba.nacos.client.naming: DEBUG
     org.springframework.cloud.gateway: DEBUG
-    org.springframework.web: DEBUG
+    org.springframework.cloud.client.discovery: DEBUG
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   forward-headers-strategy: framework
 
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
 spring:
+  application:
+    name: api-gateway
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
-  application:
-    name: api-gateway
   security:
     enabled: false
   cloud:
+    nacos:
+      enabled: true
+      discovery:
+        server-addr: ${SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR:nacos:8848}
+    loadbalancer:
+      nacos:
+        enabled: true
+      ribbon:
+        enabled: false
+    ribbon:
+      enabled: false
     gateway:
       default-filters:
         - AddResponseHeader=X-Response-Id, gateway-123
       routes:
-        # Auth Service (все эндпоинты)
         - id: auth-service
-          uri: http://localhost:8089
+          uri: lb://auth-service
           predicates:
             - Path=/api/auth/**, /api/groups/**, /api/specialties/**, /api/teachers/**, /api/users/**
           filters: []
 
+        # Auth Service OpenAPI docs
+        - id: auth-service-docs
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/v3/api-docs/**
+          filters:
+            - RewritePath=/auth/(?<segment>.*), /$\{segment}
+
         # Test Management Service
         - id: test-management
-          uri: http://localhost:8082
+          uri: lb://test-management-service
           predicates:
             - Path=/api/tests/**,/api/assignments/**
           filters: []
 
+        # Test Management Service OpenAPI docs
+        - id: test-management-docs
+          uri: lb://test-management-service
+          predicates:
+            - Path=/test-management/v3/api-docs/**
+          filters:
+            - RewritePath=/test-management/(?<segment>.*), /$\{segment}
+
         # Test Session Service
         - id: test-session
-          uri: http://localhost:8083
+          uri: lb://session-service
           predicates:
             - Path=/api/sessions/**
           filters: []
 
-        # Proctoring Service
+        # Session Service OpenAPI docs
+        - id: test-session-docs
+          uri: lb://session-service
+          predicates:
+            - Path=/session/v3/api-docs/**
+          filters:
+            - RewritePath=/session/(?<segment>.*), /$\{segment}
+
+        # Proctoring Service (REST)
         - id: proctoring
-          uri: http://localhost:8084
+          uri: lb://proctoring-service
           predicates:
             - Path=/api/proctoring/**
           filters: []
 
+        # Proctoring Service OpenAPI docs
+        - id: proctoring-docs
+          uri: lb://proctoring-service
+          predicates:
+            - Path=/proctoring/v3/api-docs/**
+          filters:
+            - RewritePath=/proctoring/(?<segment>.*), /$\{segment}
+
         # Proctoring WebSocket
         - id: proctoring-websocket
-          uri: ws://localhost:8084
+          uri: lb:ws://proctoring-service
           predicates:
             - Path=/ws/proctoring/**
+          filters: []
 
         # Gamification Service
         - id: gamification
-          uri: http://localhost:8085
+          uri: lb://gamification-service
           predicates:
             - Path=/api/gamification/**
           filters: []
 
+        # Gamification Service OpenAPI docs
+        - id: gamification-docs
+          uri: lb://gamification-service
+          predicates:
+            - Path=/gamification/v3/api-docs/**
+          filters:
+            - RewritePath=/gamification/(?<segment>.*), /$\{segment}
+
         # Notification Service
         - id: notification
-          uri: http://localhost:8086
+          uri: lb://notification-service
           predicates:
             - Path=/api/notifications/**
           filters: []
 
+        # Notification Service OpenAPI docs
+        - id: notification-docs
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification/v3/api-docs/**
+          filters:
+            - RewritePath=/notification/(?<segment>.*), /$\{segment}
+
         # Analytics Service
         - id: analytics
-          uri: http://localhost:8087
+          uri: lb://analytics-service
           predicates:
             - Path=/api/analytics/**
           filters: []
+
+        # Analytics Service OpenAPI docs
+        - id: analytics-docs
+          uri: lb://analytics-service
+          predicates:
+            - Path=/analytics/v3/api-docs/**
+          filters:
+            - RewritePath=/analytics/(?<segment>.*), /$\{segment}
 
       httpclient:
         websocket:
@@ -84,3 +156,23 @@ spring:
 eureka:
   client:
     enabled: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Auth Service
+        url: /auth/v3/api-docs
+      - name: Test Management Service
+        url: /test-management/v3/api-docs
+      - name: Session Service
+        url: /session/v3/api-docs
+      - name: Proctoring Service
+        url: /proctoring/v3/api-docs
+      - name: Gamification Service
+        url: /gamification/v3/api-docs
+      - name: Analytics Service
+        url: /analytics/v3/api-docs
+      - name: Notification Service
+        url: /notification/v3/api-docs
+

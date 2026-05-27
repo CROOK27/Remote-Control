@@ -14,32 +14,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
-
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public 
+    ecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.disable())
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Разрешаем доступ к Swagger UI без аутентификации
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/api-docs/**",
-                                "/webjars/**",
-                                "/actuator/health"
-                        ).permitAll()
-                        .requestMatchers("/api/gamification/users/*/points").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
-                        .requestMatchers("/api/gamification/users/*/history").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
-                        .requestMatchers("/api/gamification/leaderboard").permitAll()
-                        .requestMatchers("/api/gamification/**").hasAnyRole("TEACHER", "ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
+                        .requestMatchers("/ws/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .anyRequest().permitAll()
+                );
         return http.build();
     }
 }
