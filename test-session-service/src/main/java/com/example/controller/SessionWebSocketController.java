@@ -3,6 +3,7 @@ package com.example.controller;
 import com.example.dto.AnswerRequest;
 import com.example.dto.QuestionDto;
 import com.example.service.SessionService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 @RequiredArgsConstructor
+@Hidden
 public class SessionWebSocketController {
 
     private final SessionService sessionService;

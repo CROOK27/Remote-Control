@@ -68,3 +68,4 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     tryItOutEnabled: true
+  show-spring-cloud-feign: false
